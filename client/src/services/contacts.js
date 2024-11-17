@@ -1,14 +1,20 @@
-import api from './api';
+import api from "./api";
 
 // Fetch all contacts
-export const getContacts = async () => {
-  const response = await api.get('/contacts');
+export const getContacts = async (searchQuery, page, limit) => {
+  const response = await api.get("/contacts", {
+    params: {
+      searchQuery,
+      page,
+      limit,
+    },
+  });
   return response.data;
 };
 
 // Add a new contact
 export const addContact = async (contactData) => {
-  const response = await api.post('/contacts', contactData);
+  const response = await api.post("/contacts", contactData);
   return response.data;
 };
 

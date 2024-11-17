@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Container,
   Typography,
@@ -18,11 +18,13 @@ import {
   updateContact,
   deleteContact,
 } from "./services/contacts";
+import debounce from "lodash/debounce";
 
 const App = () => {
   const [contacts, setContacts] = useState([]);
-  const [filteredContacts, setFilteredContacts] = useState([]);
   const [selectedContact, setSelectedContact] = useState(null);
+  const [totalContacts, setTotalContacts] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -31,33 +33,35 @@ const App = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  useEffect(() => {
-    const fetchContacts = async () => {
+  const debouncedFetchContacts = useCallback(
+    debounce(async (searchQuery, page, rowsPerPage) => {
+      setLoading(true);
       try {
-        const data = await getContacts();
-        setContacts(data);
-        setFilteredContacts(data);
+        const { contacts, totalContacts, totalPages, currentPage } =
+          await getContacts(searchQuery, page + 1, rowsPerPage);
+        console.log(contacts);
+        setContacts(contacts);
+        setTotalContacts(totalContacts);
+        setTotalPages(totalPages);
         setLoading(false);
       } catch (err) {
         setError("Unable to connect to server");
         setLoading(false);
       }
+    }, 800),
+    []
+  );
+
+  useEffect(() => {
+    debouncedFetchContacts(searchQuery, page, rowsPerPage); // Call the debounced function
+    return () => {
+      debouncedFetchContacts.cancel(); // Cleanup the debounce on component unmount or when dependencies change
     };
-    fetchContacts();
-  }, []);
+  }, [page, rowsPerPage, searchQuery, debouncedFetchContacts]);
 
   const handleSearchChange = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
-    filterContacts(query);
-  };
-
-  const filterContacts = (query) => {
-    const filtered = contacts.filter((contact) =>
-      contact.email.toLowerCase().includes(query.toLowerCase())
-    );
-    setFilteredContacts(filtered);
-    setPage(0); // Reset pagination to the first page on search
   };
 
   const handleChangePage = (event, newPage) => {
@@ -73,12 +77,10 @@ const App = () => {
     try {
       const addedContact = await addContact(newContact);
       setContacts((prevContacts) => [...prevContacts, addedContact]);
-      setFilteredContacts((prevFilteredContacts) => [...prevFilteredContacts, addedContact]); // If search is implemented
     } catch (err) {
-      setError('Unable to connect to server');
+      setError("Unable to connect to server");
     }
   };
-  
 
   const handleEditContact = (contact) => {
     setSelectedContact(contact);
@@ -87,25 +89,21 @@ const App = () => {
 
   const handleSaveEdit = async (updatedContact) => {
     try {
-      const savedContact = await updateContact(updatedContact._id, updatedContact);
-      
+      const savedContact = await updateContact(
+        updatedContact._id,
+        updatedContact
+      );
+
       // Update the contacts state immediately after editing
       setContacts((prevContacts) =>
         prevContacts.map((contact) =>
           contact._id === savedContact._id ? savedContact : contact
         )
       );
-  
-      // Also update the filteredContacts to ensure the search results remain consistent
-      setFilteredContacts((prevFilteredContacts) =>
-        prevFilteredContacts.map((contact) =>
-          contact._id === savedContact._id ? savedContact : contact
-        )
-      );
-  
+
       setEditModalOpen(false); // Close the modal
     } catch (err) {
-      setError('Unable to connect to server');
+      setError("Unable to connect to server");
     }
   };
 
@@ -118,29 +116,16 @@ const App = () => {
     try {
       await deleteContact(selectedContact._id); // Delete contact from the database
       // Update the frontend state by filtering out the deleted contact
-      setContacts((prevContacts) => 
+      setContacts((prevContacts) =>
         prevContacts.filter((contact) => contact._id !== selectedContact._id)
       );
       setDeleteModalOpen(false); // Close the modal
       setSelectedContact(null); // Clear the selected contact
     } catch (error) {
-      alert('Failed to delete contact. Please try again.');
-      console.error('Error deleting contact:', error);
+      alert("Failed to delete contact. Please try again.");
+      console.error("Error deleting contact:", error);
     }
   };
-
-  if (loading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        height="100vh"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
 
   if (error) {
     return (
@@ -161,6 +146,23 @@ const App = () => {
       >
         Contact Management
       </Typography>
+
+      {loading && (
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          bgcolor="rgba(255, 255, 255, 0.7)" // Optional: adds semi-transparent background to make loader stand out
+          zIndex="999" // Ensures loader is on top
+        >
+          <CircularProgress />
+        </Box>
+      )}
 
       {/* Search */}
       <TextField
@@ -203,10 +205,7 @@ const App = () => {
         }}
       >
         <ContactsTable
-          contacts={filteredContacts.slice(
-            page * rowsPerPage,
-            page * rowsPerPage + rowsPerPage
-          )}
+          contacts={contacts}
           onEdit={handleEditContact}
           onDelete={handleDeleteContact}
         />
@@ -217,7 +216,7 @@ const App = () => {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={filteredContacts.length}
+          count={totalContacts}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
