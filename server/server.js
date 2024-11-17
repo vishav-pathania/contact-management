@@ -1,27 +1,35 @@
-const express = require('express');
-const connectDB = require('./config/db');
-const cors = require('cors'); // Import CORS
-require('dotenv').config();
-
+import express from "express";
+import connectDB from "./config/db.js";
+import cors from "cors";
+import dotenv from "dotenv";
+import contactRouter from "./routes/contacts.js";
 const app = express();
 
+dotenv.config()
 // Connect to MongoDB
 connectDB();
 
 // Middleware
+
+const allowedOrigin = process.env.FRONTEND_URL;
+console.log(`CORS allowing front-end url: ${allowedOrigin}`);
+
+app.use(
+  cors({
+    origin: allowedOrigin,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  })
+);
+
 app.use(express.json()); // Parse incoming JSON
 
-
-const allowedOrigin = process.env.FRONTEND_URL
-
-app.use(cors({ origin: allowedOrigin })); // Allow requests from the React app
-
 // Routes
-app.use('/contacts', require('./routes/contacts'));
+app.use("/contacts", contactRouter);
 
 // Default route for testing
-app.get('/', (req, res) => {
-  res.send('Welcome to the Contact Management API');
+app.get("/", (req, res) => {
+  res.send("Welcome to the Contact Management API");
 });
 
 // Start the server
