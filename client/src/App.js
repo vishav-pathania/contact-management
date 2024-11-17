@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Typography } from '@mui/material';
+import { Container, Typography, CircularProgress, Box, Alert } from '@mui/material';
 import ContactForm from './components/ContactForm';
 import ContactsTable from './components/ContactsTable';
 import EditContactModal from './components/EditContactModal';
@@ -11,18 +11,30 @@ const App = () => {
   const [selectedContact, setSelectedContact] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);  // Track loading state
+  const [error, setError] = useState(null);  // Track error state
 
   useEffect(() => {
     const fetchContacts = async () => {
-      const data = await getContacts();
-      setContacts(data);
+      try {
+        const data = await getContacts();
+        setContacts(data);
+        setLoading(false);
+      } catch (err) {
+        setError('Unable to connect to server');  // Set error message
+        setLoading(false);
+      }
     };
     fetchContacts();
   }, []);
 
   const handleAddContact = async (newContact) => {
-    const addedContact = await addContact(newContact);
-    setContacts([...contacts, addedContact]);
+    try {
+      const addedContact = await addContact(newContact);
+      setContacts([...contacts, addedContact]);
+    } catch (err) {
+      setError('Unable to connect to server');
+    }
   };
 
   const handleEditContact = (contact) => {
@@ -31,9 +43,13 @@ const App = () => {
   };
 
   const handleSaveEdit = async (updatedContact) => {
-    const savedContact = await updateContact(updatedContact._id, updatedContact);
-    setContacts(contacts.map((contact) => (contact._id === savedContact._id ? savedContact : contact)));
-    setEditModalOpen(false);
+    try {
+      const savedContact = await updateContact(updatedContact._id, updatedContact);
+      setContacts(contacts.map((contact) => (contact._id === savedContact._id ? savedContact : contact)));
+      setEditModalOpen(false);
+    } catch (err) {
+      setError('Unable to connect to server');
+    }
   };
 
   const handleDeleteContact = (contact) => {
@@ -43,7 +59,7 @@ const App = () => {
 
   const confirmDeleteContact = async () => {
     try {
-      await deleteContact(selectedContact._id); // Use the full contact object, not just an ID
+      await deleteContact(selectedContact._id);
       setContacts(contacts.filter((contact) => contact._id !== selectedContact._id));
       setDeleteModalOpen(false);
     } catch (error) {
@@ -52,11 +68,34 @@ const App = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container>
+        <Typography variant="h4" align="center" color="error" gutterBottom>
+          {error}
+        </Typography>
+      </Container>
+    );
+  }
+
   return (
     <Container>
       <Typography variant="h4" align="center" gutterBottom>
         Contact Management
       </Typography>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
       <ContactForm onSubmit={handleAddContact} />
       <ContactsTable contacts={contacts} onEdit={handleEditContact} onDelete={handleDeleteContact} />
       <EditContactModal

@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Box, TextField, Button, Grid } from '@mui/material';
+import { isValidEmail, isEmpty } from '../utils/validators';
+
+// Utility to strip phone number formatting
+const stripPhoneNumberFormatting = (formattedNumber) => {
+  return formattedNumber.replace(/[^\d]/g, ''); // Remove all non-numeric characters
+};
 
 const EditContactModal = ({ open, onClose, contact, onSave }) => {
   const [formData, setFormData] = useState({
@@ -11,12 +17,47 @@ const EditContactModal = ({ open, onClose, contact, onSave }) => {
     jobTitle: '',
   });
 
+  const [errors, setErrors] = useState({}); // State to store error messages
+
   // Update formData when the contact changes
   useEffect(() => {
     if (contact) {
-      setFormData(contact);
+      setFormData({
+        ...contact,
+        phoneNumber: stripPhoneNumberFormatting(contact.phoneNumber), // Unformat the phone number
+      });
+      setErrors({}); // Reset errors when loading a new contact
     }
   }, [contact]);
+
+  const validateForm = () => {
+    let isValid = true;
+    const newErrors = {};
+
+    // Check required fields
+    ['firstName', 'lastName', 'email', 'phoneNumber'].forEach((field) => {
+      if (isEmpty(formData[field])) {
+        newErrors[field] = `${field.replace(/([A-Z])/g, ' $1')} is required`;
+        isValid = false;
+      }
+    });
+
+    // Validate email
+    if (!isEmpty(formData.email) && !isValidEmail(formData.email)) {
+      newErrors.email = 'Invalid email address';
+      isValid = false;
+    }
+
+    // Validate phone number
+    const phoneRegex = /^\d{10}$/; // Ensure it is 10 digits
+    if (!isEmpty(formData.phoneNumber) && !phoneRegex.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Phone number must be 10 digits';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -24,8 +65,10 @@ const EditContactModal = ({ open, onClose, contact, onSave }) => {
   };
 
   const handleSave = () => {
-    onSave(formData);
-    onClose();
+    if (validateForm()) {
+      onSave(formData);
+      onClose();
+    }
   };
 
   if (!contact) return null; // Render nothing if no contact is provided
@@ -43,6 +86,8 @@ const EditContactModal = ({ open, onClose, contact, onSave }) => {
                 name={field}
                 value={formData[field] || ''}
                 onChange={handleChange}
+                error={!!errors[field]} // Show error state if validation fails
+                helperText={errors[field]} // Display validation error messages
               />
             </Grid>
           ))}
