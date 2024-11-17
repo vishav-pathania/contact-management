@@ -87,29 +87,66 @@ const App = () => {
   }
 
   return (
-    <Container>
-      <Typography variant="h4" align="center" gutterBottom>
-        Contact Management
-      </Typography>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+    <Container maxWidth="md" sx={{ paddingTop: 4 }}>
+    {/* Heading */}
+    <Typography 
+      variant="h4" 
+      align="center" 
+      sx={{ marginBottom: 4, fontWeight: 600, color: 'primary.main' }}
+    >
+      Contact Management
+    </Typography>
+
+    {/* Error Alert */}
+    {error && (
+      <Alert severity="error" sx={{ mb: 3, fontWeight: 500 }}>
+        {error}
+      </Alert>
+    )}
+
+    {/* Contact Form */}
+    <Box 
+      sx={{
+        backgroundColor: 'background.paper',
+        boxShadow: 2,
+        borderRadius: 2,
+        padding: 3,
+        mb: 4,
+      }}
+    >
       <ContactForm onSubmit={handleAddContact} />
-      <ContactsTable contacts={contacts} onEdit={handleEditContact} onDelete={handleDeleteContact} />
-      <EditContactModal
-        open={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        contact={selectedContact}
-        onSave={handleSaveEdit}
+    </Box>
+
+    {/* Contacts Table */}
+    <Box 
+      sx={{
+        backgroundColor: 'background.paper',
+        boxShadow: 2,
+        borderRadius: 2,
+        padding: 3,
+        mb: 4,
+      }}
+    >
+      <ContactsTable
+        contacts={contacts}
+        onEdit={handleEditContact}
+        onDelete={handleDeleteContact}
       />
-      <ConfirmDeleteModal
-        open={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        onConfirm={confirmDeleteContact}
-      />
-    </Container>
+    </Box>
+
+    {/* Modals */}
+    <EditContactModal
+      open={editModalOpen}
+      onClose={() => setEditModalOpen(false)}
+      contact={selectedContact}
+      onSave={handleSaveEdit}
+    />
+    <ConfirmDeleteModal
+      open={deleteModalOpen}
+      onClose={() => setDeleteModalOpen(false)}
+      onConfirm={confirmDeleteContact}
+    />
+  </Container>
   );
 };
 
