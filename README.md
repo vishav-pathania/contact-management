@@ -118,7 +118,7 @@ cd contact-management
 
 ## Deployment Links
 
-**Frontend (Vercel):** https://contact-management-ivory.vercel.app/
+**Frontend (Vercel):** https://contact-management-one-phi.vercel.app/
 
 **Backend (Render):** https://contact-backend-imcz.onrender.com
 

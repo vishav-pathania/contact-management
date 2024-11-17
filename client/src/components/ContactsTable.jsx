@@ -29,7 +29,7 @@ const ContactsTable = ({ contacts, onEdit, onDelete }) => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {contacts.map((contact) => (
+          {contacts?.map((contact) => (
             <TableRow key={contact._id}>
               <TableCell>{contact.firstName}</TableCell>
               <TableCell>{contact.lastName}</TableCell>
