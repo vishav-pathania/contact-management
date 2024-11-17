@@ -7,20 +7,27 @@ const ContactsTable = ({ contacts, onEdit, onDelete }) => {
       <Table>
         <TableHead>
           <TableRow>
-            {['First Name', 'Last Name', 'Email', 'Phone Number', 'Company', 'Job Title', 'Actions'].map((header) => (
-              <TableCell key={header}>{header}</TableCell>
-            ))}
+            <TableCell>First Name</TableCell>
+            <TableCell>Last Name</TableCell>
+            <TableCell>Email</TableCell>
+            <TableCell>Phone Number</TableCell>
+            <TableCell>Company</TableCell>
+            <TableCell>Job Title</TableCell>
+            <TableCell>Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {contacts.map((contact, index) => (
-            <TableRow key={index}>
-              {Object.values(contact).map((value, idx) => (
-                <TableCell key={idx}>{value}</TableCell>
-              ))}
+          {contacts.map((contact) => (
+            <TableRow key={contact.id}>
+              <TableCell>{contact.firstName}</TableCell>
+              <TableCell>{contact.lastName}</TableCell>
+              <TableCell>{contact.email}</TableCell>
+              <TableCell>{contact.phoneNumber}</TableCell>
+              <TableCell>{contact.company}</TableCell>
+              <TableCell>{contact.jobTitle}</TableCell>
               <TableCell>
                 <Button color="primary" onClick={() => onEdit(contact)}>Edit</Button>
-                <Button color="secondary" onClick={() => onDelete(contact.id)}>Delete</Button>
+                <Button color="secondary" onClick={() => onDelete(contact)}>Delete</Button>
               </TableCell>
             </TableRow>
           ))}

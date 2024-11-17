@@ -2,54 +2,52 @@ import React, { useState, useEffect } from 'react';
 import { Container, Typography } from '@mui/material';
 import ContactForm from './components/ContactForm';
 import ContactsTable from './components/ContactsTable';
+import EditContactModal from './components/EditContactModal';
+import ConfirmDeleteModal from './components/ConfirmDeleteModal';
 import { getContacts, addContact, updateContact, deleteContact } from './services/contacts';
 
 const App = () => {
   const [contacts, setContacts] = useState([]);
+  const [selectedContact, setSelectedContact] = useState(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
-  // Fetch all contacts from the server when the component loads
   useEffect(() => {
     const fetchContacts = async () => {
-      try {
-        const data = await getContacts();
-        setContacts(data); // Update state with server data
-      } catch (error) {
-        console.error('Error fetching contacts:', error);
-      }
+      const data = await getContacts();
+      setContacts(data);
     };
     fetchContacts();
   }, []);
 
-  // Add a new contact
   const handleAddContact = async (newContact) => {
-    try {
-      const addedContact = await addContact(newContact); // Send to server
-      setContacts([...contacts, addedContact]); // Update local state
-    } catch (error) {
-      console.error('Error adding contact:', error);
-    }
+    const addedContact = await addContact(newContact);
+    setContacts([...contacts, addedContact]);
   };
 
-  // Edit an existing contact
-  const handleEditContact = async (updatedContact) => {
-    try {
-      const updated = await updateContact(updatedContact.id, updatedContact); // Send to server
-      setContacts(
-        contacts.map((contact) =>
-          contact.id === updatedContact.id ? updated : contact
-        )
-      ); // Update local state
-    } catch (error) {
-      console.error('Error updating contact:', error);
-    }
+  const handleEditContact = (contact) => {
+    setSelectedContact(contact);
+    setEditModalOpen(true);
   };
 
-  // Delete a contact
-  const handleDeleteContact = async (id) => {
+  const handleSaveEdit = async (updatedContact) => {
+    const savedContact = await updateContact(updatedContact._id, updatedContact);
+    setContacts(contacts.map((contact) => (contact._id === savedContact._id ? savedContact : contact)));
+    setEditModalOpen(false);
+  };
+
+  const handleDeleteContact = (contact) => {
+    setSelectedContact(contact);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteContact = async () => {
     try {
-      await deleteContact(id); // Remove from server
-      setContacts(contacts.filter((contact) => contact.id !== id)); // Update local state
+      await deleteContact(selectedContact._id); // Use the full contact object, not just an ID
+      setContacts(contacts.filter((contact) => contact._id !== selectedContact._id));
+      setDeleteModalOpen(false);
     } catch (error) {
+      alert('Failed to delete contact. Please try again.');
       console.error('Error deleting contact:', error);
     }
   };
@@ -60,10 +58,17 @@ const App = () => {
         Contact Management
       </Typography>
       <ContactForm onSubmit={handleAddContact} />
-      <ContactsTable
-        contacts={contacts}
-        onEdit={handleEditContact}
-        onDelete={handleDeleteContact}
+      <ContactsTable contacts={contacts} onEdit={handleEditContact} onDelete={handleDeleteContact} />
+      <EditContactModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        contact={selectedContact}
+        onSave={handleSaveEdit}
+      />
+      <ConfirmDeleteModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDeleteContact}
       />
     </Container>
   );
