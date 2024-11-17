@@ -11,8 +11,10 @@ connectDB();
 // Middleware
 app.use(express.json()); // Parse incoming JSON
 
-// Configure CORS
-app.use(cors({ origin: 'http://localhost:3000' })); // Allow requests from the React app
+
+const allowedOrigin = process.env.FRONTEND_URL
+
+app.use(cors({ origin: allowedOrigin })); // Allow requests from the React app
 
 // Routes
 app.use('/contacts', require('./routes/contacts'));
